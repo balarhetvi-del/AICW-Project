@@ -439,6 +439,125 @@
       header, .kpi-strip, footer { padding-left: 20px; padding-right: 20px; }
       .kpi-strip { margin: 20px; grid-template-columns: repeat(2,1fr); }
     }
+
+    /* (modal removed — Groq key hardcoded) */
+    .modal-overlay-unused {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(5,13,26,.92);
+      backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .modal-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 40px;
+      width: 460px; max-width: 95vw;
+      box-shadow: 0 40px 100px rgba(0,0,0,.7), 0 0 60px rgba(0,229,195,.08);
+      position: relative;
+    }
+
+    .modal-box::before {
+      content: ''; position: absolute;
+      top: -1px; left: -1px; width: 28px; height: 28px;
+      border-top: 2px solid var(--gold); border-left: 2px solid var(--gold);
+      border-radius: 4px 0 0 0;
+    }
+
+    .modal-box::after {
+      content: ''; position: absolute;
+      bottom: -1px; right: -1px; width: 28px; height: 28px;
+      border-bottom: 2px solid var(--teal); border-right: 2px solid var(--teal);
+      border-radius: 0 0 4px 0;
+    }
+
+    .modal-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--teal), #5b9cf6);
+      border-radius: 14px;
+      display: grid; place-items: center;
+      font-size: 24px; margin-bottom: 20px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .modal-box h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem; font-weight: 800;
+      letter-spacing: .06em; color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .modal-box p {
+      font-size: .72rem; color: var(--muted);
+      line-height: 1.7; margin-bottom: 24px;
+    }
+
+    .modal-box p a {
+      color: var(--teal); text-decoration: none;
+    }
+
+    .modal-box p a:hover { text-decoration: underline; }
+
+    .modal-label {
+      font-size: .65rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px; display: block;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: rgba(5,13,26,.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      outline: none;
+      transition: border-color .2s;
+      letter-spacing: .04em;
+    }
+
+    .modal-input:focus { border-color: rgba(0,229,195,.4); }
+    .modal-input::placeholder { color: var(--muted); }
+
+    .modal-error {
+      font-size: .65rem; color: var(--crimson);
+      margin-top: 8px; display: none; letter-spacing: .06em;
+    }
+
+    .modal-btn {
+      width: 100%; margin-top: 20px;
+      background: linear-gradient(135deg, var(--teal), #5b9cf6);
+      border: none; border-radius: 10px;
+      padding: 13px;
+      font-family: 'Syne', sans-serif;
+      font-size: .85rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--deep); cursor: pointer;
+      transition: transform .15s, box-shadow .2s;
+    }
+
+    .modal-btn:hover { transform: scale(1.02); box-shadow: 0 0 28px rgba(0,229,195,.4); }
+    .modal-btn:active { transform: scale(.98); }
+
+    .modal-note {
+      font-size: .62rem; color: var(--muted);
+      text-align: center; margin-top: 14px;
+      letter-spacing: .06em; line-height: 1.6;
+    }
+
+    .key-set-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .6rem; color: var(--teal);
+      background: rgba(0,229,195,.08);
+      border: 1px solid rgba(0,229,195,.2);
+      border-radius: 999px; padding: 3px 10px;
+      cursor: pointer; margin-left: 8px;
+      transition: all .2s;
+    }
+
+    .key-set-badge:hover { background: rgba(0,229,195,.15); }
   </style>
 </head>
 <body>
@@ -588,7 +707,7 @@
 </div>
 
 <script>
-  // Clock
+  // ── Clock ──
   function tick() {
     const now = new Date();
     document.getElementById('clock').textContent =
@@ -596,13 +715,18 @@
   }
   tick(); setInterval(tick, 1000);
 
-  // AI System Prompt — full banking context
+  // ── Groq Config ──
+  const GROQ_API_KEY = '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';
+  const GROQ_MODEL   = 'llama-3.1-8b-instant';
+  const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
+
+  // ── System Prompt ──
   const SYSTEM_PROMPT = `You are Apex AI Analyst, an expert banking intelligence assistant embedded in a real-time Banking Analytical Dashboard for Apex Bank.
 
 CURRENT DASHBOARD KPIs (This Quarter):
 - Total Revenue: $4.82B (▲ 12.4% vs last quarter)
 - Active Accounts: 2.1M (▲ 8.7% growth)
-- NPL Ratio (Non-Performing Loan Ratio): 1.9% (▼ 0.3% improvement — industry avg is 2.4%)
+- NPL Ratio: 1.9% (▼ 0.3% improvement — industry avg is 2.4%)
 - CAR (Capital Adequacy Ratio): 18.6% (regulatory minimum: 10.5%, internal threshold: 15%)
 - Net Interest Margin (NIM): 3.8%
 - Return on Assets (ROA): 1.4%
@@ -610,9 +734,9 @@ CURRENT DASHBOARD KPIs (This Quarter):
 - Loan-to-Deposit Ratio (LDR): 72.4%
 - Cost-to-Income Ratio: 42.3%
 - Tier 1 Capital Ratio: 16.1%
-- Gross NPA (Non-Performing Assets): $91.6M
+- Gross NPA: $91.6M
 - Provision Coverage Ratio (PCR): 78%
-- CASA Ratio (Current + Savings Accounts): 48.6%
+- CASA Ratio: 48.6%
 - Digital Banking Users: 1.3M (62% of active accounts)
 - Mortgage Portfolio: $1.2B
 - Corporate Loans: $2.1B
@@ -624,10 +748,19 @@ CURRENT DASHBOARD KPIs (This Quarter):
 - Operating Expenses: $97M
 - Previous Quarter Revenue: $4.29B
 - YoY Revenue Growth: 18.3%
+- Total Customers: 710
+- Total Balance: 977M
+- Avg Annual Income: 776.79K
+- Avg Credit Score: 720.95
+- Customer Regions: East, West, North, South, Central
+- Loan Status: Approved, Rejected, Closed, Pending
+- Account Types: Savings, Current, Recurring Deposit, Fixed Deposit
+- Risk Categories: Medium, Low, High, Very High
+- Complaint Status: No Complaint (66.34%), Resolved, Pending
 
-Your role: Answer questions about the banking dashboard clearly and insightfully. Explain metrics, identify trends, flag risks, and give actionable commentary. Be concise (under 200 words unless more is needed), use bullet points for lists, and add interpretive context — don't just repeat numbers. When relevant, mention regulatory benchmarks or industry comparisons.`;
+Your role: Answer questions about the banking dashboard clearly and insightfully. Explain metrics, identify trends, flag risks, and give actionable commentary. Be concise (under 200 words unless the question needs more), use bullet points for lists, and add interpretive context. Mention regulatory benchmarks or industry comparisons when relevant.`;
 
-  let conversationHistory = [];
+  let conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
   let isLoading = false;
 
   function getTime() {
@@ -640,30 +773,22 @@ Your role: Answer questions about the banking dashboard clearly and insightfully
   }
 
   function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
 
   function sendSuggestion(el) {
-    document.getElementById('chatInput').value = el.textContent;
+    document.getElementById('chatInput').value = el.textContent.trim();
     sendMessage();
   }
 
   function formatBotText(text) {
-    // Bold
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Bullet lists
-    text = text.replace(/^[-•*]\s(.+)/gm, '<li style="margin-left:14px;margin-bottom:3px">$1</li>');
+    text = text.replace(/^[-•*]\s(.+)/gm, '<li style="margin-left:14px;margin-bottom:4px">$1</li>');
     if (text.includes('<li')) {
-      text = text.replace(/(<li[\s\S]*<\/li>)/, '<ul style="list-style:disc;padding-left:6px;margin:6px 0">$1</ul>');
+      text = text.replace(/(<li[\s\S]*?<\/li>(\s*<li[\s\S]*?<\/li>)*)/, '<ul style="list-style:disc;padding-left:6px;margin:8px 0">$1</ul>');
     }
-    // Newlines
     text = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
-    // Highlight dollar amounts
     text = text.replace(/(\$[\d,.]+[BMK]?)/g, '<span class="tag-gold">$1</span>');
-    // Highlight percentages
     text = text.replace(/(\b\d+\.?\d*%)/g, '<span class="tag-teal">$1</span>');
     return text;
   }
@@ -686,19 +811,16 @@ Your role: Answer questions about the banking dashboard clearly and insightfully
   function showTyping() {
     const container = document.getElementById('chatMessages');
     const div = document.createElement('div');
-    div.className = 'msg bot';
-    div.id = 'typingIndicator';
+    div.className = 'msg bot'; div.id = 'typingIndicator';
     div.innerHTML = `
       <div class="msg-avatar">🤖</div>
-      <div>
-        <div class="msg-bubble">
-          <div class="typing-indicator">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
+      <div><div class="msg-bubble">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
         </div>
-      </div>`;
+      </div></div>`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
   }
@@ -709,7 +831,7 @@ Your role: Answer questions about the banking dashboard clearly and insightfully
   }
 
   async function sendMessage() {
-    const input = document.getElementById('chatInput');
+    const input   = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
     const userText = input.value.trim();
     if (!userText || isLoading) return;
@@ -724,27 +846,34 @@ Your role: Answer questions about the banking dashboard clearly and insightfully
     showTyping();
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch(GROQ_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`
+        },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: conversationHistory
+          model: GROQ_MODEL,
+          messages: conversationHistory,
+          max_tokens: 1024,
+          temperature: 0.7
         })
       });
 
       const data = await response.json();
       removeTyping();
 
-      const botText = data.content?.[0]?.text || 'Sorry, I could not generate a response. Please try again.';
-      conversationHistory.push({ role: 'assistant', content: botText });
-      appendMessage('bot', formatBotText(botText));
+      if (data.error) {
+        appendMessage('bot', `<span class="tag-red">⚠ Error:</span> ${data.error.message || 'Something went wrong. Please try again.'}`);
+      } else {
+        const botText = data.choices?.[0]?.message?.content || 'Sorry, no response generated.';
+        conversationHistory.push({ role: 'assistant', content: botText });
+        appendMessage('bot', formatBotText(botText));
+      }
 
     } catch (err) {
       removeTyping();
-      appendMessage('bot', '<span class="tag-red">⚠ Connection error.</span> Please check your network and try again.');
+      appendMessage('bot', `<span class="tag-red">⚠ Network error:</span> ${err.message}<br><br>Make sure you are connected to the internet and try again.`);
     }
 
     isLoading = false;
