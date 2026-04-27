@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banking Analytical Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold:     #f5c842;
+      --gold-lt:  #ffe98a;
+      --teal:     #00e5c3;
+      --crimson:  #ff3d6e;
+      --deep:     #050d1a;
+      --mid:      #0b1a2e;
+      --panel:    #0d2040;
+      --border:   rgba(245,200,66,.18);
+      --text:     #e8f0ff;
+      --muted:    #6a84aa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--deep);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    /* ── animated mesh background ─────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 20%,  rgba(0,229,195,.10) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 90% 80%,  rgba(245,200,66,.10) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 50% 50%,  rgba(255,61,110,.07) 0%, transparent 60%);
+      animation: meshShift 12s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    /* subtle grid lines */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(245,200,66,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,200,66,.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+    }
+
+    @keyframes meshShift {
+      0%   { opacity: .8; transform: scale(1) rotate(0deg); }
+      100% { opacity: 1;  transform: scale(1.08) rotate(1deg); }
+    }
+
+    /* ── layout wrapper ────────────────────────────────────── */
+    .page {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      padding: 0 0 48px;
+    }
+
+    /* ── header ────────────────────────────────────────────── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 48px 24px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      background: rgba(5,13,26,.6);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .brand-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--gold), var(--teal));
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 20px;
+      box-shadow: 0 0 24px rgba(245,200,66,.35);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 24px rgba(245,200,66,.35); }
+      50%       { box-shadow: 0 0 40px rgba(0,229,195,.5); }
+    }
+
+    .brand-text h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem; font-weight: 800;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .brand-text p {
+      font-size: .68rem; color: var(--muted);
+      letter-spacing: .18em; text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .header-right {
+      display: flex; align-items: center; gap: 24px;
+    }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,61,110,.1);
+      border: 1px solid rgba(255,61,110,.3);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: .7rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--crimson);
+    }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--crimson);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .2; }
+    }
+
+    .timestamp {
+      font-size: .7rem; color: var(--muted);
+      letter-spacing: .08em;
+    }
+
+    /* ── KPI strip ─────────────────────────────────────────── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      margin: 0 48px;
+      margin-top: 36px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .kpi {
+      background: var(--panel);
+      padding: 24px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: background .3s;
+    }
+
+    .kpi:hover { background: rgba(13,32,64,.9); }
+
+    .kpi::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .kpi.gold::before  { background: linear-gradient(90deg, var(--gold), transparent); }
+    .kpi.teal::before  { background: linear-gradient(90deg, var(--teal), transparent); }
+    .kpi.red::before   { background: linear-gradient(90deg, var(--crimson), transparent); }
+    .kpi.blue::before  { background: linear-gradient(90deg, #5b9cf6, transparent); }
+
+    .kpi-label {
+      font-size: .65rem; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+
+    .kpi-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem; font-weight: 800; line-height: 1;
+    }
+
+    .kpi.gold .kpi-value  { color: var(--gold); }
+    .kpi.teal .kpi-value  { color: var(--teal); }
+    .kpi.red  .kpi-value  { color: var(--crimson); }
+    .kpi.blue .kpi-value  { color: #5b9cf6; }
+
+    .kpi-delta {
+      font-size: .72rem; margin-top: 8px;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .kpi-delta.up   { color: var(--teal); }
+    .kpi-delta.down { color: var(--crimson); }
+
+    /* ── section title ─────────────────────────────────────── */
+    .section-title {
+      padding: 40px 48px 16px;
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .section-title h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .section-title .line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    .section-tag {
+      font-size: .65rem; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--gold); background: rgba(245,200,66,.08);
+      border: 1px solid rgba(245,200,66,.2);
+      border-radius: 4px; padding: 4px 10px;
+    }
+
+    /* ── dashboard iframe wrapper ──────────────────────────── */
+    .iframe-section { padding: 0 48px; }
+
+    .iframe-shell {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+      background: var(--panel);
+      box-shadow:
+        0 0 0 1px rgba(245,200,66,.06),
+        0 40px 100px rgba(0,0,0,.7),
+        0 0 80px rgba(0,229,195,.05);
+    }
+
+    /* corner accents */
+    .iframe-shell::before,
+    .iframe-shell::after {
+      content: '';
+      position: absolute; z-index: 10;
+      width: 24px; height: 24px;
+      pointer-events: none;
+    }
+
+    .iframe-shell::before {
+      top: -1px; left: -1px;
+      border-top: 2px solid var(--gold);
+      border-left: 2px solid var(--gold);
+      border-radius: 4px 0 0 0;
+    }
+
+    .iframe-shell::after {
+      bottom: -1px; right: -1px;
+      border-bottom: 2px solid var(--teal);
+      border-right: 2px solid var(--teal);
+      border-radius: 0 0 4px 0;
+    }
+
+    .iframe-topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      background: rgba(5,13,26,.8);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dot-row { display: flex; gap: 7px; }
+
+    .dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+    }
+
+    .dot-r { background: var(--crimson); }
+    .dot-y { background: var(--gold); }
+    .dot-g { background: var(--teal); }
+
+    .iframe-topbar-title {
+      flex: 1;
+      font-size: .7rem; color: var(--muted);
+      letter-spacing: .1em; text-align: center;
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 580px;
+      border: none;
+    }
+
+    /* ── footer ────────────────────────────────────────────── */
+    footer {
+      margin: 48px 48px 0;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .footer-left {
+      font-size: .68rem; color: var(--muted);
+      letter-spacing: .1em;
+    }
+
+    .footer-right {
+      display: flex; gap: 24px;
+    }
+
+    .footer-pill {
+      font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .footer-pill:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(245,200,66,.05);
+    }
+
+    /* ── floating orbs (pure decoration) ──────────────────── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(70px);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+
+    .orb-1 {
+      width: 340px; height: 340px;
+      background: rgba(245,200,66,.07);
+      top: -80px; right: 10%;
+    }
+
+    .orb-2 {
+      width: 280px; height: 280px;
+      background: rgba(0,229,195,.06);
+      bottom: 10%; left: -60px;
+      animation-delay: -6s;
+    }
+
+    .orb-3 {
+      width: 200px; height: 200px;
+      background: rgba(255,61,110,.05);
+      top: 50%; right: -40px;
+      animation-delay: -12s;
+    }
+
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 40px) scale(1.12); }
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      header, .kpi-strip, .section-title, .iframe-section, footer {
+        padding-left: 20px; padding-right: 20px;
+      }
+      .kpi-strip { margin: 24px 20px; grid-template-columns: repeat(2,1fr); }
+      iframe { height: 400px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- decorative orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="page">
+
+    <!-- ── HEADER ── -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🏦</div>
+        <div class="brand-text">
+          <h1>Apex Bank Analytics</h1>
+          <p>Intelligence Command Center</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          Live
+        </div>
+        <span class="timestamp" id="clock">--:--:-- UTC</span>
+      </div>
+    </header>
+
+    <!-- ── KPI STRIP ── -->
+    <div class="kpi-strip">
+      <div class="kpi gold">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">$4.82B</div>
+        <div class="kpi-delta up">▲ 12.4% vs last quarter</div>
+      </div>
+      <div class="kpi teal">
+        <div class="kpi-label">Active Accounts</div>
+        <div class="kpi-value">2.1M</div>
+        <div class="kpi-delta up">▲ 8.7% growth</div>
+      </div>
+      <div class="kpi red">
+        <div class="kpi-label">NPL Ratio</div>
+        <div class="kpi-value">1.9%</div>
+        <div class="kpi-delta down">▼ 0.3% risk drop</div>
+      </div>
+      <div class="kpi blue">
+        <div class="kpi-label">CAR</div>
+        <div class="kpi-value">18.6%</div>
+        <div class="kpi-delta up">▲ above 15% threshold</div>
+      </div>
+    </div>
+
+    <!-- ── SECTION LABEL ── -->
+    <div class="section-title">
+      <h2>Power BI Report</h2>
+      <div class="line"></div>
+      <span class="section-tag">Interactive</span>
+    </div>
+
+    <!-- ── IFRAME ── -->
+    <div class="iframe-section">
+      <div class="iframe-shell">
+        <div class="iframe-topbar">
+          <div class="dot-row">
+            <span class="dot dot-r"></span>
+            <span class="dot dot-y"></span>
+            <span class="dot dot-g"></span>
+          </div>
+          <span class="iframe-topbar-title">
+            app.powerbi.com · Banking Analytical Dashboard · Secure Embed
+          </span>
+        </div>
+        <iframe
+          src="https://app.powerbi.com/reportEmbed?reportId=cff1f2a5-6ed6-450d-ad66-fbfd1a2d30a0&autoAuth=true&ctid=aed43286-0f66-47d6-942b-d31a4b8addca"
+          allowfullscreen
+          title="Banking Power BI Report">
+        </iframe>
+      </div>
+    </div>
+
+    <!-- ── FOOTER ── -->
+    <footer>
+      <div class="footer-left">
+        © 2026 Apex Bank Analytics Platform &nbsp;·&nbsp; All data is confidential
+      </div>
+      <div class="footer-right">
+        <div class="footer-pill">Export</div>
+        <div class="footer-pill">Share</div>
+        <div class="footer-pill">Settings</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // live UTC clock
+    function tick() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toUTCString().split(' ').slice(4,5)[0] + ' UTC';
+    }
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
